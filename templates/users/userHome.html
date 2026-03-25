@@ -1,0 +1,201 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#007bff">
+    <title>Enhanced Liver Image Segmentation</title>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Roboto Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Static CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+ 
+    </style>
+</head>
+
+<body>
+    <!-- Particle Background -->
+    <canvas id="particles"></canvas>
+
+    <!-- Original 3D Animated Leaf -->
+    <div class="leaf-container">
+        <div class="leaf">
+            <div class="front"><i class="fas fa-leaf"></i></div>
+            <div class="back"><i class="fas fa-leaf"></i></div>
+        </div>
+    </div>
+
+    <!-- 3D Animated Needle-like Leaf -->
+    <div class="needle-container">
+        <div class="needle">
+            <div class="front"><i class="fas fa-leaf"></i></div>
+            <div class="back"><i class="fas fa-leaf"></i></div>
+        </div>
+    </div>
+
+    <!-- 3D Animated Lobed Leaf -->
+    <div class="lobed-container">
+        <div class="lobed">
+            <div class="front"></div>
+            <div class="back"></div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo"><i class="fas fa-leaf mr-2"></i>Liver Image Segmentation</a>
+            <div class="menu-toggle" id="mobileMenu" role="button" aria-expanded="false" tabindex="0">☰</div>
+            <div class="nav-menu" id="navMenu">
+                <a href="userHome" class="nav-btn"><i class="fas fa-home mr-1"></i>Home</a>
+                <a href="training" class="nav-btn"><i class="fas fa-book mr-1"></i>Training</a>
+                <a href="prediction" class="nav-btn"><i class="fas fa-chart-line mr-1"></i>Prediction</a>
+                <a href="Ulog" class="nav-btn"><i class="fas fa-sign-out-alt mr-1"></i>Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>Welcome to Liver Image Segmentation </h1>
+            <p>Liver segmentation is a crucial process in medical imaging that involves accurately identifying and outlining the liver region from CT or MRI scans.</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <section class="section-card">
+            <h2> How Liver Image Segmentation Works</h2>
+            <ul>
+                <li><strong>Image Collection:</strong> Upload images of plant leaves for analysis.</li>
+                <li><strong>Feature Analysis:</strong> Utilizes advanced algorithms to identify disease patterns.</li>
+                <li><strong>ML Model Prediction:</strong> Diagnoses plant diseases and suggests treatments.</li>
+                <li><strong>Real-Time Monitoring:</strong> Tracks plant health over time for proactive care.</li>
+            </ul>
+        </section>
+
+        <section class="section-card">
+            <h2>🚀 Features</h2>
+            <ul>
+                <li>Accurate plant disease diagnosis using machine learning.</li>
+                <li>Detailed analytics dashboard for monitoring plant health.</li>
+                <li>Real-time alerts for disease detection and prevention.</li>
+                <li>Customizable models for various plant species and conditions.</li>
+                
+            </ul>
+        </section>
+
+        <section class="section-card" id="about">
+            <h2>📖 About Us</h2>
+            <p>
+                Liver segmentation is a crucial process in medical imaging that involves accurately identifying and outlining the liver region from CT or MRI scans. It aids in diagnosing liver diseases, planning surgeries, and monitoring treatment by providing detailed anatomical information.
+            </p>
+           
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer-gradient">
+        <div class="footer-container">
+            <p>© 2025 LiverSegmentation. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Mobile Menu Toggle
+        const mobileMenu = document.getElementById('mobileMenu');
+        const navMenu = document.getElementById('navMenu');
+        mobileMenu.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            const isExpanded = navMenu.classList.contains('active');
+            mobileMenu.setAttribute('aria-expanded', isExpanded);
+        });
+
+        // Active Link Highlight
+        const navLinks = document.querySelectorAll('.nav-btn');
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href === window.location.pathname || (window.location.pathname === '/' && href === 'userHome')) {
+                link.classList.add('active');
+            }
+        });
+
+        // Particle Animation
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particlesArray = [];
+        const numberOfParticles = 100;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 5 + 1;
+                this.speedX = Math.random() * 2 - 1;
+                this.speedY = Math.random() * 2 - 1;
+                this.color = ['#F1C40F', '#27AE60', '#E74C3C', '#3498DB'][Math.floor(Math.random() * 4)];
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.size > 0.2) this.size -= 0.05;
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particlesArray = [];
+            for (let i = 0; i < numberOfParticles; i++) {
+                particlesArray.push(new Particle());
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+                if (particlesArray[i].size <= 0.2) {
+                    particlesArray.splice(i, 1);
+                    i--;
+                    particlesArray.push(new Particle());
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+
+        initParticles();
+        animateParticles();
+
+        // Resize Canvas
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        });
+    </script>
+</body>
+
+</html>

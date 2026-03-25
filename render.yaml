@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: liver-segmentation-backend
+    env: python
+    buildCommand: pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn Liver_Image_Segmentation_Using_DeepLearning.wsgi --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: DEBUG
+        value: "True"

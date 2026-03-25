@@ -1,0 +1,327 @@
+   * {
+       margin: 0;
+       padding: 0;
+       box-sizing: border-box;
+   }
+
+   body {
+       background: linear-gradient(135deg,rgb(42, 94, 111),rgb(244, 63, 63));
+       color: #FFF;
+       font-family: 'Roboto', sans-serif;
+       overflow-x: hidden;
+       position: relative;
+   }
+
+   /* Particle Background Animation */
+   #particles {
+       position: fixed;
+       top: 0;
+       left: 0;
+       width: 100%;
+       height: 100%;
+       z-index: -1;
+   }
+
+   /* Original Leaf Animation */
+   .leaf-container {
+       position: fixed;
+       top: 20%;
+       right: 5%;
+       perspective: 1500px;
+       width: 120px;
+       height: 120px;
+       opacity: 0.8;
+   }
+
+   .leaf {
+       width: 100%;
+       height: 100%;
+       position: relative;
+       transform-style: preserve-3d;
+       animation: spinLeaf 8s infinite linear;
+   }
+
+   .leaf div {
+       position: absolute;
+       width: 120px;
+       height: 120px;
+       background: linear-gradient(45deg, #27AE60, #2ECC71);
+       clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+       color: #FFF;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       box-shadow: 0 0 15px rgba(39, 174, 96, 0.6);
+   }
+
+   .leaf .front {
+       transform: translateZ(60px);
+   }
+
+   .leaf .back {
+       transform: rotateY(180deg) translateZ(60px);
+   }
+
+   @keyframes spinLeaf {
+       from {
+           transform: rotateY(0);
+       }
+
+       to {
+           transform: rotateY(360deg);
+       }
+   }
+
+   /* Needle-like Leaf Animation */
+   .needle-container {
+       position: fixed;
+       top: 70%;
+       left: 5%;
+       perspective: 1500px;
+       width: 100px;
+       height: 100px;
+       opacity: 0.8;
+   }
+
+   .needle {
+       width: 100%;
+       height: 100%;
+       position: relative;
+       transform-style: preserve-3d;
+       animation: spinNeedle 8s infinite linear;
+   }
+
+   .needle div {
+       position: absolute;
+       width: 100px;
+       height: 100px;
+       background: linear-gradient(45deg, #219653, #27AE60);
+       clip-path: polygon(50% 0%, 40% 100%, 60% 100%);
+       color: #FFF;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       box-shadow: 0 0 15px rgba(33, 150, 83, 0.6);
+   }
+
+   .needle .front {
+       transform: translateZ(50px);
+   }
+
+   .needle .back {
+       transform: rotateY(180deg) translateZ(50px);
+   }
+
+   @keyframes spinNeedle {
+       from {
+           transform: rotateY(0);
+       }
+
+       to {
+           transform: rotateY(360deg);
+       }
+   }
+
+   /* Lobed Leaf Animation */
+   .lobed-container {
+       position: fixed;
+       top: 50%;
+       left: 50%;
+       transform: translate(-50%, -50%);
+       perspective: 1500px;
+       width: 80px;
+       height: 80px;
+       opacity: 0.7;
+   }
+
+   .lobed {
+       width: 100%;
+       height: 100%;
+       position: relative;
+       transform-style: preserve-3d;
+       animation: pulseLobed 4s infinite ease-in-out;
+   }
+
+   .lobed div {
+       position: absolute;
+       width: 80px;
+       height: 80px;
+       background: linear-gradient(45deg, #2ECC71, #27AE60);
+       clip-path: polygon(50% 0%, 20% 40%, 0% 80%, 50% 100%, 100% 80%, 80% 40%);
+       box-shadow: 0 0 20px rgba(46, 204, 113, 0.7);
+   }
+
+   .lobed .front {
+       transform: translateZ(40px);
+   }
+
+   .lobed .back {
+       transform: rotateY(180deg) translateZ(40px);
+   }
+
+   @keyframes pulseLobed {
+       0% {
+           transform: scale(1) rotateY(0);
+       }
+
+       50% {
+           transform: scale(1.15) rotateY(180deg);
+       }
+
+       100% {
+           transform: scale(1) rotateY(360deg);
+       }
+   }
+
+   /* Navbar */
+   .navbar {
+       background: rgba(44, 62, 80, 0.9);
+       padding: 20px 0;
+       position: fixed;
+       width: 100%;
+       top: 0;
+       z-index: 1000;
+       transition: all 0.3s ease;
+   }
+
+   .nav-container {
+       max-width: 1200px;
+       margin: 0 auto;
+       display: flex;
+       align-items: center;
+       justify-content: space-between;
+       padding: 0 20px;
+   }
+
+   .nav-logo {
+       color: #ffffff;
+       font-size: 34px;
+       font-weight: 700;
+       text-decoration: none;
+   }
+
+   .nav-menu {
+       display: flex;
+       gap: 20px;
+   }
+
+   .nav-btn {
+       color: #000000;
+       text-decoration: none;
+       font-size: 16px;
+       padding: 5px 15px;
+       border-radius: 10px;
+       transition: all 0.3s ease;
+       animation: pulse 4s infinite;
+       background: linear-gradient(45deg, #f9f9f9, #2980B9);
+   }
+
+   .nav-btn:hover {
+       background: linear-gradient(45deg, #E74C3C, #C0392B);
+       color: #FFF;
+   }
+
+   @keyframes pulse {
+       0% {
+           transform: scale(1);
+       }
+
+       50% {
+           transform: scale(1.05);
+       }
+
+       100% {
+           transform: scale(1);
+       }
+   }
+
+   .menu-toggle {
+       display: none;
+       font-size: 24px;
+       color: #FFF;
+       cursor: pointer;
+   }
+
+   /* Hero Section */
+   .hero-section {
+       height: 100vh;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       text-align: center;
+       position: relative;
+   }
+
+   .hero-content {
+       max-width: 800px;
+       padding: 20px;
+   }
+
+   .hero-content h1 {
+       font-size: 48px;
+       margin-bottom: 20px;
+       color: #F1C40F;
+       text-shadow: 0 0 15px rgba(241, 196, 15, 0.7);
+   }
+
+   .hero-content p {
+       font-size: 24px;
+       margin-bottom: 30px;
+       color: #ECF0F1;
+   }
+
+   .cta-button {
+       display: inline-block;
+       padding: 15px 30px;
+       background: linear-gradient(45deg, #27AE60, #2ECC71);
+       color: #FFF;
+       text-decoration: none;
+       border-radius: 5px;
+       font-weight: 500;
+       animation: pulse 2s infinite;
+   }
+
+   .cta-button:hover {
+       background: linear-gradient(45deg, #E74C3C, #C0392B);
+   }
+
+   /* Footer */
+   .footer-gradient {
+       background: black;
+       padding: 20px 0;
+       text-align: center;
+   }
+
+   .footer-container {
+       max-width: 1200px;
+       margin: 120px auto;
+       color: #ECF0F1;
+   }
+
+   /* Responsive Design */
+   @media (max-width: 768px) {
+       .nav-menu {
+           display: none;
+           flex-direction: column;
+           position: absolute;
+           top: 60px;
+           left: 0;
+           width: 100%;
+           background: rgba(44, 62, 80, 0.95);
+           padding: 20px;
+       }
+
+       .nav-menu.active {
+           display: flex;
+       }
+
+       .menu-toggle {
+           display: block;
+       }
+
+       .leaf-container,
+       .needle-container,
+       .lobed-container {
+           display: none;
+       }
+   }
