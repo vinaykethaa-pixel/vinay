@@ -307,6 +307,13 @@ def prediction(request):
                                 if 'batch_shape' in layer.get('config', {}):
                                     layer['config']['batch_input_shape'] = layer['config'].pop('batch_shape')
                                     changed = True
+                            
+                            # Patch Keras 3 DTypePolicy back to Keras 2 string dtype format
+                            if 'dtype' in layer.get('config', {}):
+                                dtype_val = layer['config']['dtype']
+                                if isinstance(dtype_val, dict) and dtype_val.get('class_name') == 'DTypePolicy':
+                                    layer['config']['dtype'] = dtype_val.get('config', {}).get('name', 'float32')
+                                    changed = True
                         if changed:
                             f.attrs.modify('model_config', json.dumps(model_config).encode('utf-8'))
             except Exception as e:
