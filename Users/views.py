@@ -227,99 +227,131 @@ def foreground_accuracy(y_true, y_pred):
     return tf.reduce_sum(correct) / tf.reduce_sum(mask)
 
 def prediction(request):
-    import tensorflow as tf
-    from tensorflow.keras.models import load_model
     if not request.session.get('id'):
         return render(request, 'userLoginForm.html')
 
     if request.method == 'POST' and 'image' in request.FILES:
-        # Save uploaded image
-        uploaded_file = request.FILES['image']
-        unique_filename = f"{uuid.uuid4().hex}_{uploaded_file.name}"
-        image_path = os.path.join(settings.MEDIA_ROOT, 'uploads', unique_filename)
-        os.makedirs(os.path.dirname(image_path), exist_ok=True)
-        with open(image_path, 'wb+') as destination:
-            for chunk in uploaded_file.chunks():
-                destination.write(chunk)
+        import gc
+        import tensorflow as tf
+        from tensorflow.keras.models import load_model
+        
+        # Optimize TensorFlow for Render's 512MB RAM constraint
+        tf.config.threading.set_intra_op_parallelism_threads(1)
+        tf.config.threading.set_inter_op_parallelism_threads(1)
+        
+        try:
+            # Save uploaded image
+            uploaded_file = request.FILES['image']
+            unique_filename = f"{uuid.uuid4().hex}_{uploaded_file.name}"
+            image_path = os.path.join(settings.MEDIA_ROOT, 'uploads', unique_filename)
+            os.makedirs(os.path.dirname(image_path), exist_ok=True)
+            with open(image_path, 'wb+') as destination:
+                for chunk in uploaded_file.chunks():
+                    destination.write(chunk)
 
-        # Load and preprocess image
-        IMG_HEIGHT, IMG_WIDTH = 256, 256
-        img = cv2.imread(image_path)
-        if img is None:
+            # Load and preprocess image
+            IMG_HEIGHT, IMG_WIDTH = 256, 256
+            img = cv2.imread(image_path)
+            if img is None:
+                return render(request, 'users/prediction.html', {
+                    'error': 'Invalid image file.'
+                })
+
+            # Step 1: Validate that the image looks like a CT scan
+            # Check grayscale (low saturation)
+            is_ct_valid = True
+            error_msg = None
+
+            if len(img.shape) == 3 and img.shape[2] == 3:
+                hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+                mean_saturation = np.mean(hsv[:, :, 1])
+                if mean_saturation > 50:
+                    is_ct_valid = False
+                    error_msg = "Invalid image: This does not appear to be a CT scan. Please upload a valid liver CT scan image."
+
+            if is_ct_valid:
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img
+                mean_intensity = np.mean(gray)
+                std_intensity = np.std(gray)
+                if mean_intensity > 220:
+                    is_ct_valid = False
+                    error_msg = "Invalid image: This does not appear to be a CT scan. Please upload a valid liver CT scan image."
+                elif std_intensity < 10:
+                    is_ct_valid = False
+                    error_msg = "Invalid image: This does not appear to be a CT scan. Please upload a valid liver CT scan image."
+
+            if not is_ct_valid:
+                return render(request, 'users/prediction.html', {
+                    'error': error_msg
+                })
+
+            img_resized = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT)) / 255.0
+            img_input = np.expand_dims(img_resized, axis=0)
+
+            # Load model
+            model_path = os.path.join(settings.MEDIA_ROOT, "liver_segmentation_unet.h5")
+
+            # Patch the model config to fix "batch_shape" -> "batch_input_shape" for Keras 3 / TF 2.15+ compatibility
+            try:
+                import h5py
+                import json
+                with h5py.File(model_path, 'r+') as f:
+                    model_config_str = f.attrs.get('model_config')
+                    if model_config_str:
+                        if isinstance(model_config_str, bytes):
+                            model_config_str = model_config_str.decode('utf-8')
+                        model_config = json.loads(model_config_str)
+                        changed = False
+                        for layer in model_config.get('config', {}).get('layers', []):
+                            if layer.get('class_name') == 'InputLayer':
+                                if 'batch_shape' in layer.get('config', {}):
+                                    layer['config']['batch_input_shape'] = layer['config'].pop('batch_shape')
+                                    changed = True
+                        if changed:
+                            f.attrs.modify('model_config', json.dumps(model_config).encode('utf-8'))
+            except Exception as e:
+                print(f"Issue patching h5 file (could be already patched or read-only): {e}")
+
+            model = load_model(model_path, custom_objects={"foreground_accuracy": foreground_accuracy})
+
+            # Predict
+            pred_mask = model.predict(img_input)[0]
+
+            # Step 2: Validate the prediction mask (check if liver was found)
+            pred_mask_check = (pred_mask > 0.5).astype(np.uint8)
+            coverage = np.sum(pred_mask_check) / pred_mask_check.size
+
+            if coverage < 0.005:
+                return render(request, 'users/prediction.html', {
+                    'error': 'Invalid image: No liver region detected. Please upload a valid liver CT scan image.'
+                })
+            if coverage > 0.70:
+                return render(request, 'users/prediction.html', {
+                    'error': 'Invalid image: This does not appear to be a valid liver CT scan image.'
+                })
+
+            pred_mask_bin = (pred_mask > 0.5).astype(np.uint8) * 255
+
+            # Save predicted mask
+            mask_filename = f"predicted_{unique_filename}"
+            mask_path = os.path.join(settings.MEDIA_ROOT, 'masks', mask_filename)
+            os.makedirs(os.path.dirname(mask_path), exist_ok=True)
+            cv2.imwrite(mask_path, pred_mask_bin.squeeze())
+
+            # URLs to display in template
+            image_url = os.path.join(settings.MEDIA_URL, 'uploads', unique_filename)
+            mask_url = os.path.join(settings.MEDIA_URL, 'masks', mask_filename)
+
             return render(request, 'users/prediction.html', {
-                'error': 'Invalid image file.'
+                'predicted_class': 'Liver Region',
+                'confidence': None,
+                'image_url': image_url,
+                'mask_url': mask_url,
+                'error': None
             })
-
-        # Step 1: Validate that the image looks like a CT scan
-        # Check grayscale (low saturation)
-        is_ct_valid = True
-        error_msg = None
-
-        if len(img.shape) == 3 and img.shape[2] == 3:
-            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-            mean_saturation = np.mean(hsv[:, :, 1])
-            if mean_saturation > 50:
-                is_ct_valid = False
-                error_msg = "Invalid image: This does not appear to be a CT scan. Please upload a valid liver CT scan image."
-
-        if is_ct_valid:
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img
-            mean_intensity = np.mean(gray)
-            std_intensity = np.std(gray)
-            if mean_intensity > 220:
-                is_ct_valid = False
-                error_msg = "Invalid image: This does not appear to be a CT scan. Please upload a valid liver CT scan image."
-            elif std_intensity < 10:
-                is_ct_valid = False
-                error_msg = "Invalid image: This does not appear to be a CT scan. Please upload a valid liver CT scan image."
-
-        if not is_ct_valid:
-            return render(request, 'users/prediction.html', {
-                'error': error_msg
-            })
-
-        img_resized = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT)) / 255.0
-        img_input = np.expand_dims(img_resized, axis=0)
-
-        # Load model
-        model_path = os.path.join(settings.MEDIA_ROOT, "liver_segmentation_unet.h5")
-        model = load_model(model_path, custom_objects={"foreground_accuracy": foreground_accuracy})
-
-        # Predict
-        pred_mask = model.predict(img_input)[0]
-
-        # Step 2: Validate the prediction mask (check if liver was found)
-        pred_mask_check = (pred_mask > 0.5).astype(np.uint8)
-        coverage = np.sum(pred_mask_check) / pred_mask_check.size
-
-        if coverage < 0.005:
-            return render(request, 'users/prediction.html', {
-                'error': 'Invalid image: No liver region detected. Please upload a valid liver CT scan image.'
-            })
-        if coverage > 0.70:
-            return render(request, 'users/prediction.html', {
-                'error': 'Invalid image: This does not appear to be a valid liver CT scan image.'
-            })
-
-        pred_mask_bin = (pred_mask > 0.5).astype(np.uint8) * 255
-
-        # Save predicted mask
-        mask_filename = f"predicted_{unique_filename}"
-        mask_path = os.path.join(settings.MEDIA_ROOT, 'masks', mask_filename)
-        os.makedirs(os.path.dirname(mask_path), exist_ok=True)
-        cv2.imwrite(mask_path, pred_mask_bin.squeeze())
-
-        # URLs to display in template
-        image_url = os.path.join(settings.MEDIA_URL, 'uploads', unique_filename)
-        mask_url = os.path.join(settings.MEDIA_URL, 'masks', mask_filename)
-
-        return render(request, 'users/prediction.html', {
-            'predicted_class': 'Liver Region',
-            'confidence': None,
-            'image_url': image_url,
-            'mask_url': mask_url,
-            'error': None
-        })
+        finally:
+            tf.keras.backend.clear_session()
+            gc.collect()
 
     return render(request, 'users/prediction.html', {
         'predicted_class': None,
